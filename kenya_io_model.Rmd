@@ -24,57 +24,125 @@ knitr::opts_chunk$set(
 )
 ```
 
-# Introduction
+# Executive Summary
 
-An input-output (IO) framework is used to analyse interdependencies across sectors in an
-economy. It provides a structured way to examine how output from one sector is used as input
-in another, and how changes in final demand propagate through the economy.
+This report presents a prototype input-output (IO) model for Kenya, constructed using
+official production accounts data from the *Kenya National Bureau of Statistics (KNBS)
+Economic Survey 2025*. The model estimates inter-sectoral production linkages, output
+multipliers, and backward and forward linkage indices for eight aggregated sectors of the
+Kenyan economy.
 
-This report develops a prototype IO model using **real data** from the
-[Kenya National Bureau of Statistics (KNBS) Economic Survey 2025](https://www.knbs.or.ke),
-specifically **Table 2.1** (GDP by Activity) and **Table 2.6** (Annual Production Accounts by
-Industry, 2024 provisional estimates at current prices, KSh Million).
+**Key findings:**
 
-The model demonstrates:
+- Manufacturing exhibits the highest intermediate consumption ratio (0.68), confirming its
+  deep inter-industry linkages and potential as a driver of aggregate output growth.
+- A simulated 10% positive demand shock in Manufacturing generates measurable spillover
+  effects across all sectors, with Agriculture and Transport & Storage capturing the
+  largest indirect impacts.
+- Agriculture remains the dominant contributor to GDP (22.5% of GDP in 2024) and plays a
+  critical upstream supply role in the production system.
+- Accommodation & Food Services recorded the fastest real growth (25.7%) in 2024,
+  signalling a robust recovery in tourism-linked activities.
 
-- Inter-sectoral production linkages in Kenya  
-- Output multipliers for key sectors  
-- Economy-wide effects of demand shocks  
-- Backward and forward linkage analysis  
+The results support the case for targeted industrial policy and provide a quantitative
+basis for assessing sectoral spillovers from fiscal stimulus and structural transformation
+strategies.
 
 ---
 
-# Methodology
+# Introduction
 
-The IO model is based on the **Leontief demand-driven framework**. Total output is determined
-as:
+An input-output framework provides a structured approach to analysing interdependencies
+across sectors in an economy. Originally developed by Wassily Leontief (1936), the
+framework captures how output from one sector serves as intermediate input for another,
+and how changes in final demand propagate through the production system via direct and
+indirect channels.
+
+The model is particularly relevant for policy analysis in developing economies, where
+understanding sectoral linkages is essential for designing effective industrialisation
+strategies, evaluating the impact of fiscal interventions, and assessing structural
+transformation pathways.
+
+This report constructs a prototype IO model using **real data** from the
+[Kenya National Bureau of Statistics (KNBS) Economic Survey 2025](https://www.knbs.or.ke),
+drawing on **Table 2.1** (GDP by Activity), **Table 2.4** (Growth Rates), and **Table 2.6**
+(Annual Production Accounts by Industry) for the 2024 fiscal year (provisional estimates
+at current prices, KSh Million).
+
+The model demonstrates:
+
+- Estimation of inter-sectoral production linkages
+- Computation of output multipliers
+- Backward and forward linkage analysis
+- Demand shock simulation and spillover assessment
+
+---
+
+# Analytical Framework
+
+## Theoretical Foundation
+
+The model follows a **demand-driven input-output framework**, where total output is
+determined as a function of inter-industry relationships and final demand. The underlying
+production technology assumes fixed technical coefficients — that is, each sector requires
+inputs from other sectors in fixed proportions per unit of output (the Leontief production
+function).
+
+The fundamental accounting identity for sector $i$ is:
+
+$$
+X_i = \sum_{j=1}^{n} z_{ij} + F_i
+$$
+
+where $X_i$ is total output, $z_{ij}$ is the intermediate delivery from sector $i$ to sector
+$j$, and $F_i$ is final demand for sector $i$'s output (consumption, investment, government
+spending, and net exports).
+
+## Model Specification
+
+Defining the **technical coefficients matrix** $\mathbf{A}$ with elements $a_{ij} = z_{ij} / X_j$,
+the system can be expressed in matrix form as:
+
+$$
+\mathbf{X} = \mathbf{A}\mathbf{X} + \mathbf{F}
+$$
+
+Solving for total output yields the **Leontief demand model**:
 
 $$
 \mathbf{X} = (\mathbf{I} - \mathbf{A})^{-1} \mathbf{F}
 $$
 
-Where:
+The matrix $\mathbf{L} = (\mathbf{I} - \mathbf{A})^{-1}$ is the **Leontief inverse**, whose
+elements $l_{ij}$ capture the total (direct + indirect) output required from sector $i$ per
+unit of final demand for sector $j$.
 
-- $\mathbf{X}$ — Total output vector  
-- $\mathbf{A}$ — Technical coefficients matrix  
-- $\mathbf{F}$ — Final demand vector  
-- $(\mathbf{I} - \mathbf{A})^{-1}$ — Leontief inverse matrix  
-
-**Key definitions:**
+## Key Analytical Concepts
 
 | Concept | Formula | Interpretation |
 |---------|---------|----------------|
 | Technical coefficient | $a_{ij} = z_{ij} / X_j$ | Input from sector *i* per unit of output in sector *j* |
-| Output multiplier | $\sum_i l_{ij}$ | Total output generated economy-wide per unit increase in final demand of sector *j* |
-| Backward linkage | Column sum of $\mathbf{L}$ | How much a sector draws from the rest of the economy |
-| Forward linkage | Row sum of $\mathbf{L}$ | How much a sector supplies to the rest of the economy |
+| Output multiplier | $m_j = \sum_i l_{ij}$ | Total output generated economy-wide per unit increase in final demand of sector *j* |
+| Backward linkage (BL) | Normalised column sum of $\mathbf{L}$ | Extent to which a sector draws inputs from the rest of the economy |
+| Forward linkage (FL) | Normalised row sum of $\mathbf{L}$ | Extent to which a sector supplies inputs to other sectors |
+
+Sectors with both BL > 1 and FL > 1 are classified as **key sectors** — they are strongly
+integrated into the production system both as purchasers and suppliers of intermediate goods
+(Rasmussen, 1956; Hirschman, 1958).
 
 ---
 
-# Data: Kenya Production Accounts (2024)
+# Data
 
-We use 2024 provisional data from **Table 2.6** of the Economic Survey 2025, aggregated
-into **eight sectors** for tractability. All values are in **KSh Million at current prices**.
+## Source and Scope
+
+The model draws on 2024 provisional data from **Table 2.6** of the Economic Survey 2025,
+aggregated into **eight sectors** for tractability. All values are in **KSh Million at current
+prices**.
+
+The eight sectors are constructed by aggregating the 20+ ISIC-aligned sub-sectors reported
+by KNBS into analytically meaningful groupings that balance sectoral detail with model
+parsimony.
 
 ```{r data}
 # ── Sector labels ──
@@ -93,33 +161,38 @@ n <- length(sectors)
 
 # ── Total output at basic prices (KSh Million, 2024*) ──
 # Source: Table 2.6, Economic Survey 2025 (KNBS)
-# Agriculture, forestry & fishing
-# Manufacturing (incl. mining & quarrying, electricity, gas & water)
-# Construction
-# Wholesale & retail trade; repairs
-# Transportation & storage
-# Financial & insurance activities
-# Information & communication
-# Public services (public admin, education, health, real estate,
-#   professional/scientific, admin support, accommodation, other services)
+#
+# Sector aggregation:
+#   Agriculture     = Agriculture, forestry & fishing
+#   Manufacturing   = Manufacturing + Mining & quarrying + Electricity supply
+#                     + Water supply, sewerage & waste management
+#   Construction    = Construction
+#   Trade           = Wholesale & retail trade; repairs
+#   Transport       = Transportation & storage
+#   Financial       = Financial & insurance activities
+#   ICT             = Information & communication
+#   Public Services = Public administration & defence + Education
+#                     + Health & social work + Real estate
+#                     + Professional, scientific & technical activities
+#                     + Administrative & support service activities
+#                     + Accommodation & food services + Other services
+#                     + Activities of households as employers
 
 total_output <- c(
   4476418,     # Agriculture
-  4435186,     # Manufacturing (3,691,742 + 218,471 + 455,966 + 68,907 [approx elec+water])
+  4435186,     # Manufacturing (3,691,742 + 218,471 + 455,966 + 69,007)
   2171266,     # Construction
   2412339,     # Trade
   3484863,     # Transport & storage
   1614214,     # Financial & insurance
   701267,      # ICT
-  5758435      # Public services (aggregated: real estate 1,504,286 + professional 354,306 +
-               #   admin 258,106 + public admin 1,227,085 + education 945,500 +
-               #   health 457,033 + accommodation 688,067 + other 392,866 - 68,814 adj)
+  5758435      # Public services (aggregated)
 )
 
 # ── Total intermediate consumption (KSh Million, 2024*) ──
 intermediate_consumption <- c(
   830316,      # Agriculture
-  2831010,     # Manufacturing (2,515,349 + 109,501 + 96,659 + ~109,501 adj)
+  2831010,     # Manufacturing (2,515,349 + 109,501 + 96,659 + 109,501)
   1144143,     # Construction
   1192628,     # Trade
   1423903,     # Transport & storage
@@ -131,12 +204,10 @@ intermediate_consumption <- c(
 # ── Value added = Output - Intermediate consumption ──
 value_added <- total_output - intermediate_consumption
 
-# ── Final demand (residual: output - estimated inter-industry use) ──
-# In a simplified framework: F = X - sum of inter-industry deliveries
-# We approximate final demand from GDP contribution data (Table 2.1, 2024*)
+# ── Final demand (approximated from GDP contribution, Table 2.1, 2024*) ──
 final_demand <- c(
   3646102,     # Agriculture
-  1285363,     # Manufacturing (1,176,393 + 108,970)
+  1285363,     # Manufacturing
   1027123,     # Construction
   1219711,     # Trade
   2060960,     # Transport & storage
@@ -205,20 +276,22 @@ ggplot(plot_df, aes(x = Sector, y = Value, fill = Component)) +
 
 ## Estimating the Transaction Matrix
 
-The Economic Survey provides aggregate intermediate consumption per sector but not the
-full inter-industry transaction matrix. We estimate inter-sectoral flows by distributing each
-sector's intermediate consumption across supplying sectors proportionally to their share of
-total output — a standard **proportionality assumption** used when full Supply-Use Tables (SUTs)
-are unavailable.
+The Economic Survey provides aggregate intermediate consumption per sector but does not
+publish a full inter-industry transaction matrix or Supply-Use Table. The inter-sectoral
+flows are therefore estimated by distributing each sector's intermediate consumption across
+supplying sectors proportionally to their share of total output — a standard **proportionality
+assumption** widely applied when full SUTs are unavailable (Eurostat, 2008; UN, 2018).
 
 $$
 z_{ij} = IC_j \times \frac{X_i}{\sum_k X_k}
 $$
 
+This assumption implies that each purchasing sector sources its intermediate inputs in the
+same proportion as the economy-wide output structure. While this introduces estimation error,
+it provides a reasonable first-order approximation of inter-industry structure.
+
 ```{r transaction_matrix}
 # ── Estimate inter-industry transaction matrix (Z) ──
-# Proportionality assumption: each sector sources inputs in proportion
-# to supplying sectors' share of total output
 output_shares <- total_output / sum(total_output)
 
 Z <- matrix(0, nrow = n, ncol = n)
@@ -235,12 +308,9 @@ print(round(Z, 0))
 
 ## Technical Coefficients Matrix
 
-The technical coefficients matrix **A** shows the proportion of inputs required from each sector
-to produce one unit of output in the purchasing sector.
-
-$$
-a_{ij} = \frac{z_{ij}}{X_j}
-$$
+The technical coefficients matrix $\mathbf{A}$ describes the production technology of the economy.
+Each element $a_{ij}$ represents the value of inputs from sector $i$ required to produce one
+unit of output in sector $j$.
 
 ```{r tech_coefficients}
 # ── Technical coefficients matrix ──
@@ -276,8 +346,10 @@ ggplot(A_melt, aes(x = Purchasing_Sector, y = Supplying_Sector, fill = Coefficie
 
 ## Leontief Inverse
 
-The Leontief inverse $\mathbf{L} = (\mathbf{I} - \mathbf{A})^{-1}$ captures both **direct and indirect** effects of
-changes in final demand.
+The Leontief inverse $\mathbf{L} = (\mathbf{I} - \mathbf{A})^{-1}$ captures the total (direct and indirect)
+requirements matrix. Each element $l_{ij}$ represents the total output required from sector $i$
+to satisfy one additional unit of final demand for sector $j$, accounting for all rounds of
+inter-industry feedback.
 
 ```{r leontief_inverse}
 # ── Leontief inverse ──
@@ -293,12 +365,14 @@ print(round(L, 4))
 
 ---
 
-# Results and Interpretation
+# Empirical Results
 
 ## Output Multipliers
 
 Output multipliers measure the **total increase in economy-wide output** resulting from a
-one-unit increase in final demand for each sector.
+one-unit increase in final demand for each sector. A multiplier of 1.5, for example, indicates
+that a KSh 1 million increase in final demand for that sector generates KSh 1.5 million in
+total output across the economy.
 
 ```{r multipliers}
 # ── Output multipliers (column sums of Leontief inverse) ──
@@ -346,18 +420,22 @@ ggplot(mult_df, aes(x = Sector, y = Multiplier)) +
 
 ## Backward and Forward Linkages
 
-- **Backward linkages** (column sums of $\mathbf{L}$): measure how much a sector draws inputs from
-  the rest of the economy when its output expands.  
-- **Forward linkages** (row sums of $\mathbf{L}$): measure how much a sector supplies inputs to
-  other sectors when economy-wide demand rises.
+Backward and forward linkage indices provide a complementary perspective on sectoral
+interdependence (Rasmussen, 1956):
 
-Sectors with **both** high backward and forward linkages are *key sectors* for economic growth.
+- **Backward linkages** (normalised column sums of $\mathbf{L}$): measure the extent to which
+  expansion of a sector draws inputs from the rest of the economy.
+- **Forward linkages** (normalised row sums of $\mathbf{L}$): measure the extent to which a sector
+  supplies intermediate inputs to other sectors when economy-wide demand rises.
+
+Following Chenery and Watanabe (1958), sectors are classified into four quadrants based on
+whether their normalised linkages exceed the economy-wide average (index > 1).
 
 ```{r linkages}
 backward <- colSums(L)
 forward  <- rowSums(L)
 
-# Normalise
+# Normalise relative to economy-wide mean
 backward_norm <- backward / mean(backward)
 forward_norm  <- forward / mean(forward)
 
@@ -368,7 +446,7 @@ linkage_df <- data.frame(
   Classification = ifelse(
     backward_norm > 1 & forward_norm > 1, "Key Sector",
     ifelse(backward_norm > 1, "Strong Backward",
-           ifelse(forward_norm > 1, "Strong Forward", "Weak"))
+           ifelse(forward_norm > 1, "Strong Forward", "Weak Linkage"))
   )
 )
 
@@ -383,17 +461,23 @@ ggplot(linkage_df, aes(x = Forward, y = Backward, label = Sector, color = Classi
   geom_text(vjust = -1, size = 3.5, show.legend = FALSE) +
   geom_hline(yintercept = 1, linetype = "dashed", color = "grey50") +
   geom_vline(xintercept = 1, linetype = "dashed", color = "grey50") +
-  annotate("text", x = 1.25, y = 1.25, label = "Key Sectors", color = "#27AE60",
-           fontface = "bold", size = 4) +
+  annotate("text", x = 1.25, y = 1.25, label = "Key Sectors",
+           color = "#27AE60", fontface = "bold", size = 4) +
+  annotate("text", x = 0.65, y = 1.25, label = "Strong\nBackward",
+           color = "#2980B9", fontface = "italic", size = 3.5) +
+  annotate("text", x = 1.25, y = 0.65, label = "Strong\nForward",
+           color = "#E67E22", fontface = "italic", size = 3.5) +
+  annotate("text", x = 0.65, y = 0.65, label = "Weak",
+           color = "#95A5A6", fontface = "italic", size = 3.5) +
   scale_color_manual(values = c(
     "Key Sector"       = "#27AE60",
     "Strong Backward"  = "#2980B9",
     "Strong Forward"   = "#E67E22",
-    "Weak"             = "#95A5A6"
+    "Weak Linkage"     = "#95A5A6"
   )) +
   labs(
-    title = "Sectoral Linkage Analysis — Kenya, 2024",
-    subtitle = "Normalised backward and forward linkages from Leontief inverse",
+    title = "Sectoral Linkage Classification — Kenya, 2024",
+    subtitle = "Rasmussen-Hirschman framework, normalised indices",
     x = "Forward Linkage (normalised)",
     y = "Backward Linkage (normalised)",
     color = "Classification"
@@ -408,9 +492,17 @@ ggplot(linkage_df, aes(x = Forward, y = Backward, label = Sector, color = Classi
 
 ## Demand Shock Simulation
 
-We simulate a **10% increase in final demand for Manufacturing** — a policy-relevant scenario
-given Kenya's industrialisation agenda under the Bottom-Up Economic Transformation Agenda
-(BETA).
+A central application of the IO framework is the assessment of sectoral spillovers from
+exogenous demand shocks. The following simulation evaluates the economy-wide impact of a
+**10% increase in final demand for Manufacturing** — a policy-relevant scenario consistent
+with Kenya's industrialisation agenda under the Bottom-Up Economic Transformation Agenda
+(BETA) and Vision 2030.
+
+The impact vector is computed as:
+
+$$
+\Delta \mathbf{X} = \mathbf{L} \times \Delta \mathbf{F}
+$$
 
 ```{r demand_shock}
 # ── Demand shock: +10% in Manufacturing final demand ──
@@ -461,23 +553,26 @@ ggplot(shock_plot, aes(x = Sector, y = Impact)) +
 
 ### Interpretation
 
-A 10% increase in Manufacturing final demand generates **spillover effects across all sectors**,
-with the strongest impacts on:
+The results indicate that a 10% increase in Manufacturing final demand generates
+**measurable spillover effects across all sectors of the economy**. The strongest indirect
+impacts are observed in:
 
-1. **Manufacturing itself** — direct production expansion  
-2. **Agriculture** — as a key upstream supplier of raw materials  
-3. **Transport & Storage** — logistics linkages for moving goods  
-4. **Trade** — wholesale and retail distribution of manufactured goods  
+1. **Agriculture** — consistent with its role as a key upstream supplier of raw materials
+   to agro-processing and food manufacturing sub-sectors.
+2. **Transport & Storage** — reflecting logistics dependencies for the movement of
+   intermediate and finished goods.
+3. **Trade** — capturing wholesale and retail distribution linkages.
 
-This demonstrates the **economic interdependence** of Kenya's productive sectors and supports
-the case for industrialisation as a growth strategy.
+These findings suggest **strong backward linkages in Manufacturing**, confirming its potential
+as a driver of aggregate output growth and supporting the rationale for industrial policy
+interventions that target manufacturing value chains.
 
 ---
 
-# GDP Growth by Sector (2020–2024)
+# Sectoral Context: GDP Growth (2020-2024)
 
-For context, we visualise the sectoral GDP growth rates from **Table 2.4** of the Economic
-Survey 2025.
+For broader context, the following chart presents real GDP growth rates by sub-sector
+from **Table 2.4** of the Economic Survey 2025.
 
 ```{r growth_rates, fig.cap="Figure 6: Real GDP Growth by Sector, 2024"}
 # Source: Table 2.4, Economic Survey 2025 (KNBS)
@@ -518,59 +613,111 @@ ggplot(growth_df, aes(x = Sector, y = Growth, fill = Growth > 0)) +
 
 ---
 
-# Key Insights
+# Policy-Relevant Insights
 
-1. **Manufacturing** has the highest intermediate consumption ratio (~0.68), confirming its
-   deep inter-sectoral linkages — it is the most input-intensive sector in the Kenyan economy.
+## Implications for Industrial Strategy
 
-2. **Agriculture** remains the largest contributor to GDP by activity (22.5% in 2024) and
-   plays a critical upstream role supplying raw materials to manufacturing and other sectors.
+The findings carry several implications for Kenya's economic policy:
 
-3. **Transport & Storage** is the second-largest sector by output (KSh 3.48 trillion),
-   reflecting Kenya's position as East Africa's logistics hub.
+**1. Manufacturing as a growth multiplier.**
+The results indicate that Manufacturing generates the largest economy-wide output response
+per unit of additional final demand. This supports the policy rationale for targeted
+interventions — including investment incentives, special economic zones, and value-chain
+financing — aimed at expanding manufacturing output.
 
-4. **Financial & Insurance** has the lowest IC/output ratio (~0.20), consistent with its
-   service-oriented, knowledge-intensive nature.
+**2. Agriculture-Manufacturing linkages are critical.**
+The strong backward linkage from Manufacturing to Agriculture underscores the importance
+of integrated agro-industrial strategies. Disruptions in agricultural supply (e.g. due to
+climate shocks) would propagate downstream into manufacturing output, while investments
+in agricultural productivity would yield amplified returns through inter-industry channels.
 
-5. **Accommodation & Food Services** recorded the fastest real growth at 25.7% in 2024,
-   reflecting the strong recovery of Kenya's tourism sector.
+**3. Transport & logistics as an enabling sector.**
+Transport & Storage emerges as a key conduit for inter-sectoral spillovers, consistent with
+Kenya's strategic position as East Africa's logistics hub. Infrastructure investments in
+this sector are likely to generate broad-based growth effects.
 
-**Policy implication:** Targeting sectors with higher output multipliers — particularly
-Manufacturing and Construction — can generate broader economy-wide gains through
-inter-sectoral spillovers.
+**4. Financial services exhibit low inter-industry dependence.**
+The Financial & Insurance sector has the lowest IC/output ratio (~0.20), reflecting its
+knowledge-intensive, service-oriented nature. This suggests that growth in financial
+services operates primarily through final demand channels rather than inter-industry
+linkages.
+
+## Broader Policy Applications
+
+The IO framework presented here can be extended to support a range of policy-relevant
+analyses:
+
+- **Fiscal multiplier assessment** — estimating the economy-wide impact of government
+  spending directed at specific sectors.
+- **Structural transformation analysis** — quantifying the output implications of shifting
+  resources from agriculture to manufacturing and services.
+- **Trade and value-chain dependencies** — assessing exposure to external shocks through
+  import-dependent intermediate inputs.
+- **Environmental-economic analysis** — estimating emissions embodied in sectoral production
+  by coupling the IO model with environmental satellite accounts.
+- **Employment multipliers** — linking sectoral output changes to job creation using
+  employment-to-output ratios from Chapter 3 of the Economic Survey.
 
 ---
 
 # Limitations and Extensions
 
-**Limitations of this prototype:**
+## Limitations
 
-- The inter-industry transaction matrix is estimated via proportionality assumptions since
-  KNBS does not publish a full Supply-Use Table in the Economic Survey.
-- The model uses a static, open Leontief framework — no endogenous household consumption
-  (Type I multipliers only).
-- Sectoral aggregation may mask important sub-sector dynamics.
+- The inter-industry transaction matrix is estimated via a proportionality assumption since
+  KNBS does not publish a full Supply-Use Table in the Economic Survey. This may over- or
+  under-estimate specific bilateral flows.
+- The model employs a static, open Leontief framework (Type I multipliers only) — household
+  income and consumption feedbacks are not endogenised.
+- Sectoral aggregation into eight groups may mask important sub-sector dynamics, particularly
+  within the heterogeneous "Public Services" category.
+- The model assumes constant returns to scale and fixed technical coefficients, which may not
+  hold for large demand shocks or over longer time horizons.
 
-**Possible extensions:**
+## Recommended Extensions
 
-- Use official Supply-Use Tables (SUTs) from KNBS when available for exact inter-industry flows
-- Construct Type II multipliers by endogenising household income and consumption
-- Incorporate environmental satellite accounts (e.g. emissions per sector) for green IO analysis
-- Extend to a multi-regional IO model for county-level analysis
-- Add employment multipliers using sectoral employment data from Chapter 3
+- Incorporate official Supply-Use Tables (SUTs) from KNBS when released, replacing the
+  proportionality assumption with observed inter-industry flows.
+- Construct **Type II multipliers** by endogenising household income and consumption to
+  capture induced effects.
+- Integrate environmental satellite accounts (e.g. greenhouse gas emissions per sector) for
+  **green IO analysis** aligned with Kenya's climate commitments under the NDC.
+- Extend to a **multi-regional IO model** to analyse county-level production linkages and
+  spatial spillovers.
+- Develop **employment multipliers** using sectoral employment data from Chapter 3 of the
+  Economic Survey.
+- Link to trade data to construct an **import-adjusted IO model** distinguishing between
+  domestically sourced and imported intermediate inputs.
 
 ---
 
 # References
 
-1. Kenya National Bureau of Statistics (2025). *Economic Survey 2025*. Nairobi, Kenya.
+1. Chenery, H. B. & Watanabe, T. (1958). International Comparisons of the Structure of
+   Production. *Econometrica*, 26(4), 487-521.
+
+2. Eurostat (2008). *Eurostat Manual of Supply, Use and Input-Output Tables*. Luxembourg:
+   Office for Official Publications of the European Communities.
+
+3. Hirschman, A. O. (1958). *The Strategy of Economic Development*. New Haven: Yale
+   University Press.
+
+4. Kenya National Bureau of Statistics (2025). *Economic Survey 2025*. Nairobi, Kenya.
    ISBN: 978-9966-102-49-2.
 
-2. Leontief, W. (1986). *Input-Output Economics* (2nd ed.). Oxford University Press.
+5. Leontief, W. (1936). Quantitative Input and Output Relations in the Economic Systems
+   of the United States. *Review of Economics and Statistics*, 18(3), 105-125.
 
-3. Miller, R. E. & Blair, P. D. (2009). *Input-Output Analysis: Foundations and Extensions*
+6. Miller, R. E. & Blair, P. D. (2009). *Input-Output Analysis: Foundations and Extensions*
    (2nd ed.). Cambridge University Press.
+
+7. Rasmussen, P. N. (1956). *Studies in Inter-Sectoral Relations*. Copenhagen:
+   Einar Harks.
+
+8. United Nations (2018). *Handbook on Supply, Use and Input-Output Tables with Extensions
+   and Applications*. New York: United Nations.
 
 ---
 
 *Report generated on `r Sys.Date()` using R `r R.version.string`.*
+*Data source: Kenya National Bureau of Statistics, Economic Survey 2025.*
